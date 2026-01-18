@@ -57,7 +57,7 @@ if (isset($_POST['login'])) {
 <div class="circle c1"></div><div class="circle c2"></div>
 <div class="wrapper">
     <div class="glass-card animate__animated animate__fadeInUp">
-        <h2 style="text-align: center; margin: 0;">Nexus Portal</h2>
+        <h2 style="text-align: center; margin: 0;">SOLO Portal</h2>
         <p style="text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 30px;">Secure Administrative Access</p>
         
         <?php if(isset($error)): ?>

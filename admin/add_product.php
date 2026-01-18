@@ -33,7 +33,7 @@ $sups = mysqli_query($conn, "SELECT * FROM suppliers");
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Nexus Admin | Add Product</title>
+    <title>SOLO Admin | Add Product</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #6366f1; --bg: #0f172a; --glass: rgba(255, 255, 255, 0.05); }
@@ -44,7 +44,7 @@ $sups = mysqli_query($conn, "SELECT * FROM suppliers");
     </style>
 </head>
 <body>
-    <div class="glass-card">
+   <div class="glass-card">
         <h2>Add Inventory Item</h2>
         <?php if(isset($success)) echo "<p style='color:#10b981'>$success</p>"; ?>
         <form method="post" enctype="multipart/form-data">
@@ -65,7 +65,8 @@ $sups = mysqli_query($conn, "SELECT * FROM suppliers");
             <input type="file" name="image" required>
             <textarea name="description" placeholder="Product Description"></textarea>
             <button name="add">Register Product & Update Debit</button>
+         
         </form>
     </div>
 </body>
-</html>
+</html> 
