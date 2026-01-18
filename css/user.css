@@ -1,0 +1,99 @@
+/* ===== GENERAL ===== */
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f4f6fb;
+}
+
+/* ===== HEADER ===== */
+.site-header {
+    background: #0b3c5d;
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+.site-header nav a {
+    color: white;
+    margin: 0 12px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ===== AUTH FORMS ===== */
+.auth-form {
+    width: 380px;
+    margin: 60px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.auth-form h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.auth-form button {
+    width: 100%;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.auth-form button:hover {
+    background: #1e40af;
+}
+
+.error {
+    color: red;
+    text-align: center;
+}
+
+/* ===== PRODUCT DETAILS ===== */
+.product-details {
+    display: flex;
+    gap: 40px;
+    max-width: 900px;
+    margin: 50px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+.product-details img {
+    width: 320px;
+    border-radius: 8px;
+}
+
+.product-details .price {
+    font-size: 22px;
+    color: #1d4ed8;
+    font-weight: bold;
+}
+
+.product-details button {
+    margin-top: 15px;
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.product-details button:hover {
+    background: #15803d;
+}
