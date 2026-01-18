@@ -64,7 +64,8 @@ if ($role === 'super_admin') {
             <a href="manage_categories.php" class="nav-link">Product Categories</a> <a href="add_product.php" class="nav-link">Add Products</a>
             <a href="manage_suppliers.php" class="nav-link">Suppliers & Debts</a>
             <a href="manage_admins.php" class="nav-link">Personnel Mgmt</a>
-        <?php endif; ?>
+            <a href="manage_items.php" class="nav-link">Manage Items</a> <a href="view_orders.php" class="nav-link">Order Records</a>
+            <?php endif; ?>
     </nav>
     <a href="logout.php" style="color:#f87171; text-decoration:none; text-align:center; padding:12px; border:1px solid rgba(248,113,113,0.2); border-radius:10px; font-weight: 600;">Terminate Session</a>
 </div>

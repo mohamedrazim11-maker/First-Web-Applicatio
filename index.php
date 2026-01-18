@@ -1,28 +1,22 @@
 <?php
-session_start(); // FIXED: Must be the very first line
+session_start(); 
 include "includes/db.php";
 
-// Redirect if not logged in
 if(!isset($_SESSION['user'])) {
     header("Location: login.php");
     exit();
 }
 
-$uid = $_SESSION['user']; // Now session is active, this will work
+$uid = $_SESSION['user']; 
 
-// Fetch user data for settings panel
 $u_query = mysqli_query($conn, "SELECT * FROM users WHERE id = '$uid'");
 $u_data = mysqli_fetch_assoc($u_query);
 $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['profile_pic'] : "images/default-avatar.png";
 
-// Get Name and Email
 $user_name = $u_data['name'];
 $user_email = $u_data['email'];
-
-// Pre-define variables to prevent warnings if data is missing
 $phone = isset($u_data['phone']) ? $u_data['phone'] : '';
 $address = isset($u_data['address']) ? $u_data['address'] : '';
-$profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['profile_pic'] : "images/default-avatar.png";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,7 +27,6 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
     <link rel="stylesheet" href="css/style.css">
     <script src="js/main.js" defer></script>
     <style>
-        /* Perfectly Centered Preloader */
         #preloader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             background: #0f172a; display: flex; flex-direction: column;
@@ -50,7 +43,25 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.95); opacity: 0.7; } }
         
-        /* Product Details Modal Styles */
+        /* Product Description Overlay */
+        .product-img-link { position: relative; cursor: pointer; display: block; overflow: hidden; border-radius: 8px; }
+        .product-description-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9); color: white; padding: 15px;
+            font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+            text-align: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        .product-img-link:hover .product-description-overlay { opacity: 1; }
+
+        /* Styled Add to Cart Button */
+        .btn-add {
+            width: 100%; background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: white; border: none; padding: 12px; border-radius: 10px;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px; transition: all 0.3s ease; margin-top: 10px;
+        }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
+
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; text-align: center; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 25px; cursor: pointer; color: #64748b; }
@@ -73,48 +84,37 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
             <i class="fa-solid fa-cart-shopping"></i> Cart 
             <span id="cart-count">0</span>
         </a>
-        
-        <button onclick="toggleDarkMode()" id="mode-btn" class="nav-icon-btn">
-            <i class="fa-solid fa-moon"></i>
-        </button>
-
+        <button onclick="toggleDarkMode()" id="mode-btn" class="nav-icon-btn"><i class="fa-solid fa-moon"></i></button>
         <div class="settings-menu">
             <button class="settings-btn"><i class="fa-solid fa-gear"></i></button>
             <div class="settings-content">
-    <div class="profile-header">
-        <img src="<?php echo $profile_pic; ?>" id="p-preview" alt="Profile" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
-        
-        <div class="user-info-display" style="margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-            <strong style="display:block; font-size: 1rem; color: var(--primary);"><?php echo htmlspecialchars($user_name); ?></strong>
-            <span style="font-size: 0.8rem; color: #64748b;"><?php echo htmlspecialchars($user_email); ?></span>
-        </div>
-
-        <input type="file" id="p-upload" style="display:none" onchange="uploadProfilePic()">
-        <button onclick="document.getElementById('p-upload').click()" class="btn-sm" style="font-size: 11px; cursor: pointer;">Change Photo</button>
-    </div>
-    
-    <hr>
-    
-    <label style="font-size: 0.75rem; color: #64748b;">Contact Number</label>
-    <input type="text" id="u-phone" placeholder="Phone" value="<?php echo htmlspecialchars($u_data['phone'] ?? ''); ?>">
-    
-    <label style="font-size: 0.75rem; color: #64748b;">Delivery Address</label>
-    <textarea id="u-address" placeholder="Address" rows="2"><?php echo htmlspecialchars($u_data['address'] ?? ''); ?></textarea>
-    
-    <button onclick="saveProfileData()" class="btn-save">Save Profile</button>
-    <hr>
-    <a href="logout.php" class="logout-link"><i class="fa-solid fa-power-off"></i> Logout</a>
-</div>
+                <div class="profile-header">
+                    <img src="<?php echo $profile_pic; ?>" id="p-preview" alt="Profile" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+                    <div class="user-info-display" style="margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        <strong style="display:block; font-size: 1rem; color: var(--primary);"><?php echo htmlspecialchars($user_name); ?></strong>
+                        <span style="font-size: 0.8rem; color: #64748b;"><?php echo htmlspecialchars($user_email); ?></span>
+                    </div>
+                    <input type="file" id="p-upload" style="display:none" onchange="uploadProfilePic()">
+                    <button onclick="document.getElementById('p-upload').click()" class="btn-sm">Change Photo</button>
+                </div>
+                <hr>
+                <label>Contact Number</label>
+                <input type="text" id="u-phone" value="<?php echo htmlspecialchars($phone); ?>">
+                <label>Delivery Address</label>
+                <textarea id="u-address" rows="2"><?php echo htmlspecialchars($address); ?></textarea>
+                <button onclick="saveProfileData()" class="btn-save">Save Profile</button>
+                <hr>
+                <a href="logout.php" class="logout-link"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
         </div>
     </nav>
-    
 </header>
 
 <div class="container">
     <div class="search-section" style="margin-bottom: 30px;">
         <div class="search-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="product-search" placeholder="Search for hardware, laptops, or accessories..." onkeyup="liveSearch()">
+            <input type="text" id="product-search" placeholder="Search tech..." onkeyup="liveSearch()">
         </div>
     </div>
 
@@ -124,27 +124,29 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
         while($p = mysqli_fetch_assoc($q)) {
             $imgPath = (!empty($p['image'])) ? "images/".$p['image'] : "images/no-image.png";
             $stock = (int)$p['stock'];
+            $description = htmlspecialchars($p['description'] ?? 'Premium quality hardware.');
         ?>
         <div class="product">
             <div class="product-img-link" onclick="openDetails('<?php echo addslashes($p['name']); ?>', '<?php echo $imgPath; ?>', '<?php echo number_format($p['price']); ?>', '<?php echo $stock; ?>')">
                 <img src="<?php echo $imgPath; ?>" alt="Product">
+                <div class="product-description-overlay"><?php echo $description; ?></div>
             </div>
             <div class="product-info">
                 <h3><?php echo $p['name']; ?></h3>
                 <p class="price">Rs. <?php echo number_format($p['price']); ?></p>
                 <p class="stock">Available: <span id="stock-<?php echo $p['id']; ?>"><?php echo $stock; ?></span></p>
             </div>
-            <form class="cart-form" method="POST">
+            <form class="cart-form" method="POST" action="cart.php">
                 <input type="hidden" name="pid" value="<?php echo $p['id']; ?>">
+                <input type="hidden" name="add" value="1">
                 <button type="submit" class="btn-add" <?php echo ($stock <= 0) ? 'disabled' : ''; ?>>
-                    <i class="fa-solid fa-plus"></i> Add to Cart
+                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
                 </button>
             </form>
         </div>
         <?php } ?>
     </div>
 </div>
- 
 
 <div id="detailsModal" class="modal">
     <div class="modal-content">
@@ -152,23 +154,18 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
         <img id="m-img" src="" style="max-height: 200px; margin-bottom: 15px;">
         <h2 id="m-name"></h2>
         <h3 id="m-price" style="color:var(--primary);"></h3>
-        <p id="m-stock" style="font-weight: bold; margin-top: 10px;"></p>
-        <p style="color:#64748b; margin-top: 10px;">High-performance tech guaranteed by Razim Tech.</p>
+        <p id="m-stock"></p>
     </div>
 </div>
 
 <script>
-    // 2-Second Animation Logic
     window.addEventListener('load', () => {
         setTimeout(() => {
             const loader = document.getElementById('preloader');
             loader.style.opacity = '0';
-            loader.style.transition = 'opacity 0.5s ease';
             setTimeout(() => { loader.style.display = 'none'; }, 500);
         }, 2000); 
     });
-
-    // Modal Logic
     function openDetails(name, img, price, stock) {
         document.getElementById('m-name').innerText = name;
         document.getElementById('m-img').src = img;
@@ -176,10 +173,7 @@ $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['prof
         document.getElementById('m-stock').innerText = "In Stock: " + stock + " units";
         document.getElementById('detailsModal').style.display = 'flex';
     }
-    function closeDetails() {
-        document.getElementById('detailsModal').style.display = 'none';
-    }
+    function closeDetails() { document.getElementById('detailsModal').style.display = 'none'; }
 </script>
-
 </body>
 </html>

@@ -10,24 +10,19 @@ if(!isset($_SESSION['user'])) {
 
 $uid = $_SESSION['user'];
 
-// --- ADVANCED ADD TO CART LOGIC ---
+// Fetch user data for pre-filling checkout form
+$u_query = mysqli_query($conn, "SELECT * FROM users WHERE id = '$uid'");
+$u_data = mysqli_fetch_assoc($u_query);
+
 if(isset($_POST['add']) && isset($_POST['pid'])) {
     $pid = intval($_POST['pid']);
     $qty = isset($_POST['qty']) ? intval($_POST['qty']) : 1;
-    
-    // Check if item exists to update quantity, otherwise insert
-    // Note: This requires a UNIQUE constraint on (user_id, product_id) in your cart table
-    $query = mysqli_query($conn, "INSERT INTO cart (user_id, product_id, quantity) 
-                                  VALUES ($uid, $pid, $qty) 
-                                  ON DUPLICATE KEY UPDATE quantity = quantity + $qty");
-
-    if($query && !empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-        echo "success";
-        exit;
-    }
+    mysqli_query($conn, "INSERT INTO cart (user_id, product_id, quantity) 
+                         VALUES ($uid, $pid, $qty) 
+                         ON DUPLICATE KEY UPDATE quantity = quantity + $qty");
+    if(!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) { echo "success"; exit; }
 }
 
-// --- REMOVE FROM CART LOGIC ---
 if(isset($_POST['remove_id'])) {
     $rid = intval($_POST['remove_id']);
     mysqli_query($conn, "DELETE FROM cart WHERE id=$rid AND user_id=$uid");
@@ -73,25 +68,46 @@ $q = mysqli_query($conn, "SELECT cart.id as cid, products.name, products.price, 
     <div class="cart-summary">
         <h3>Grand Total: <span id="grand-total">Rs. <?php echo number_format($gt); ?></span></h3>
         
-        <div class="payment-methods">
-            <h4>Select Payment Method</h4>
-            <div class="method-grid">
-                <label class="method-card">
-                    <input type="radio" name="payment" value="card" checked>
-                    <i class="fa-solid fa-credit-card"></i> Credit Card
-                </label>
-                <label class="method-card">
-                    <input type="radio" name="payment" value="paypal">
-                    <i class="fa-brands fa-paypal"></i> PayPal
-                </label>
-                <label class="method-card">
-                    <input type="radio" name="payment" value="bank">
-                    <i class="fa-solid fa-building-columns"></i> Bank Transfer
-                </label>
+        <form action="checkout.php" method="GET" style="margin-top: 20px;">
+            <div class="payment-methods" style="text-align: left; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                <h4><i class="fa-solid fa-truck-fast"></i> Delivery Details</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Full Name</label>
+                        <input type="text" name="name" value="<?php echo htmlspecialchars($u_data['name'] ?? ''); ?>" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Email</label>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($u_data['email'] ?? ''); ?>" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Phone</label>
+                        <input type="text" name="phone" value="<?php echo htmlspecialchars($u_data['phone'] ?? ''); ?>" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Address</label>
+                        <input type="text" name="address" value="<?php echo htmlspecialchars($u_data['address'] ?? ''); ?>" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius: 5px;">
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 25px;">Select Payment Method</h4>
+                <div class="method-grid">
+                    <label class="method-card">
+                        <input type="radio" name="method" value="card" checked>
+                        <i class="fa-solid fa-credit-card"></i> Card
+                    </label>
+                    <label class="method-card">
+                        <input type="radio" name="method" value="paypal">
+                        <i class="fa-brands fa-paypal"></i> PayPal
+                    </label>
+                    <label class="method-card">
+                        <input type="radio" name="method" value="bank">
+                        <i class="fa-solid fa-building-columns"></i> Bank
+                    </label>
+                </div>
             </div>
-        </div>
-        
-        <button class="btn-checkout" onclick="proceedToPayment()">Proceed to Payment</button>
+            <button type="submit" class="btn-checkout" style="width: 100%; border: none; cursor: pointer;">Confirm & Place Order</button>
+        </form>
     </div>
 </div>
 

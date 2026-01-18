@@ -75,19 +75,3 @@ body { background: var(--bg-light); }
     .sidebar.active { left: 0; }
     .main-content { margin-left: 0; }
 }
-// Add this to your <head> in PHP files: 
-// <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.querySelector('form');
-    
-    // Add a slight hover tilt effect to the login card
-    const card = document.querySelector('.login-container');
-    if(card) {
-        card.addEventListener('mousemove', (e) => {
-            let xAxis = (window.innerWidth / 2 - e.pageX) / 25;
-            let yAxis = (window.innerHeight / 2 - e.pageY) / 25;
-            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
-        });
-    }
-});
