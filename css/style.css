@@ -486,3 +486,90 @@ body.dark-mode #product-search {
     cursor: not-allowed;
     transform: none;
 }
+/* ===== BEAUTIFIED PROFILE SECTION ===== */
+/* ===== BEAUTIFIED PROFILE SECTION ===== */
+.profile-avatar-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 15px;
+}
+
+#p-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.avatar-overlay {
+    position: absolute;
+    bottom: 0;
+    right: -5px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.avatar-overlay button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.avatar-overlay .btn-remove-photo { background: #ef4444; }
+.avatar-overlay button:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+.user-name-label { display: block; font-size: 1.1rem; color: var(--dark); font-weight: 700; }
+.user-email-label { font-size: 0.85rem; color: #64748b; }
+
+.profile-form-body { text-align: left; }
+.input-group { margin-bottom: 12px; }
+.input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+.input-group label i { color: var(--primary); margin-right: 5px; }
+
+.btn-save {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    width: 100%;
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 10px !important;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #0f172a;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 50px;
+    z-index: 10001;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.5s ease;
+    font-size: 0.9rem;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5); background: #f87171; }
+    100% { transform: scale(1); }
+}
+.pulse-anim {
+    animation: pulse 0.5s ease-in-out;
+}

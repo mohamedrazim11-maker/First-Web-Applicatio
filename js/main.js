@@ -8,11 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000); 
     }
 
-    // 2. Fixed AJAX Add to Cart
+    // 2. AJAX Add to Cart Logic
     const cartForms = document.querySelectorAll('.cart-form');
     cartForms.forEach(form => {
         form.addEventListener('submit', async (e) => {
-            // CRITICAL: This stops the page from refreshing
             e.preventDefault();
 
             const pid = form.querySelector('input[name="pid"]').value;
@@ -39,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('add', 'true');
 
             try {
-                // Sending request to cart.php
                 const response = await fetch('cart.php', {
                     method: 'POST',
                     body: formData,
@@ -48,9 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const result = await response.text();
                 
-                // Your cart.php returns "success" on a valid AJAX post
                 if (result.trim() === "success") {
-                    // Update Cart Badge UI
                     const badge = document.getElementById('cart-count');
                     if (badge) {
                         let currentCount = parseInt(badge.innerText) || 0;
@@ -68,9 +64,113 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // 3. Apply saved theme on load
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        const modeBtn = document.getElementById('mode-btn');
+        if(modeBtn) modeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    }
 });
 
-// Toast System
+/**
+ * Product Details Modal Logic
+ * Updated to handle description and images
+ */
+function openDetails(name, img, price, stock, desc) {
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+        document.getElementById('m-name').innerText = name;
+        document.getElementById('m-img').src = img;
+        document.getElementById('m-price').innerText = "Rs. " + price;
+        document.getElementById('m-stock').innerText = "In Stock: " + stock + " units";
+        
+        // Ensure the description field exists in your index.php modal
+        const descElem = document.getElementById('m-desc');
+        if (descElem) descElem.innerText = desc;
+        
+        modal.style.display = 'flex';
+    }
+}
+
+function closeDetails() {
+    const modal = document.getElementById('detailsModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('detailsModal');
+    if (event.target == modal) {
+        closeDetails();
+    }
+}
+
+/**
+ * Live Search Logic
+ */
+function liveSearch() {
+    let filter = document.getElementById('product-search').value.toLowerCase();
+    let products = document.querySelectorAll('.product');
+
+    products.forEach(product => {
+        let name = product.querySelector('h3').innerText.toLowerCase();
+        product.style.display = name.includes(filter) ? "" : "none";
+    });
+}
+
+/**
+ * Dark Mode Toggle
+ */
+function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const modeBtn = document.getElementById('mode-btn');
+    if(modeBtn) modeBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+}
+
+/**
+ * Profile Management (Restricted for Guests via UI)
+ */
+async function saveProfileData() {
+    const phone = document.getElementById('u-phone').value;
+    const address = document.getElementById('u-address').value;
+    const formData = new FormData();
+    formData.append('update_profile', 'true');
+    formData.append('phone', phone);
+    formData.append('address', address);
+
+    try {
+        const res = await fetch('update_profile.php', { method: 'POST', body: formData });
+        const result = await res.text();
+        if(result.trim() === 'success') {
+            showToast("✅ Profile updated successfully");
+        } else {
+            showToast("❌ Failed to update profile");
+        }
+    } catch (err) {
+        showToast("❌ Error connecting to server");
+    }
+}
+
+async function uploadProfilePic() {
+    const fileInput = document.getElementById('p-upload');
+    if (fileInput.files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('profile_pic', fileInput.files[0]);
+    
+    try {
+        const res = await fetch('update_profile.php', { method: 'POST', body: formData });
+        location.reload(); 
+    } catch (err) {
+        showToast("❌ Error uploading photo");
+    }
+}
+
+/**
+ * Toast Notification System
+ */
 function showToast(message) {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -86,86 +186,120 @@ function showToast(message) {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 500);
     }, 3000);
+}function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => { 
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.remove(); 
+            location.reload();
+        }, 500);
+    }, 2000);
 }
 
-// Item Removal Logic (From previous step)
-async function removeItem(cartId) {
-    if (!confirm("Are you sure?")) return;
-    const formData = new FormData();
-    formData.append('remove_id', cartId);
-    const response = await fetch('cart.php', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    const result = await response.text();
-    if (result.trim() === "deleted") {
-        document.getElementById(`row-${cartId}`)?.remove();
-        updateGrandTotal();
+function removeProfilePic() {
+    if(confirm("Remove your profile picture?")) {
+        let formData = new FormData();
+        formData.append('remove_photo', '1');
+        fetch('update_profile.php', { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(data => showToast(data));
     }
 }
 
-function updateGrandTotal() {
-    let total = 0;
-    document.querySelectorAll('.responsive-table tbody tr').forEach(row => {
-        const val = parseInt(row.cells[3].innerText.replace(/[^0-9]/g, ''));
-        if (!isNaN(val)) total += val;
-    });
-    const display = document.getElementById('grand-total');
-    if (display) display.innerText = "Rs. " + total.toLocaleString();
+function uploadProfilePic() {
+    let file = document.getElementById('p-upload').files[0];
+    if(!file) return;
+    let formData = new FormData();
+    formData.append('profile_pic', file);
+    fetch('update_profile.php', { method: 'POST', body: formData })
+    .then(res => res.text())
+    .then(data => showToast(data));
 }
-document.addEventListener('DOMContentLoaded', () => {
-    // Apply saved theme on load
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.getElementById('mode-btn').innerHTML = '<i class="fa-solid fa-sun"></i>';
-    }
+
+function saveProfileData() {
+    let formData = new FormData();
+    formData.append('update_profile', '1');
+    formData.append('phone', document.getElementById('u-phone').value);
+    formData.append('address', document.getElementById('u-address').value);
+    fetch('update_profile.php', { method: 'POST', body: formData })
+    .then(res => res.text())
+    .then(data => showToast(data));
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const cartCount = document.getElementById('cart-count');
+
+    // Add to Cart AJAX
+    document.querySelectorAll('button[name="add"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            const formData = new FormData(form);
+            formData.append('add', '1');
+
+            fetch('cart.php', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(data => {
+                if(data.trim() === 'success') {
+                    // Update and Animate Counter
+                    let currentNum = parseInt(cartCount.innerText) || 0;
+                    cartCount.innerText = currentNum + 1;
+                    cartCount.classList.add('pulse-anim');
+                    setTimeout(() => cartCount.classList.remove('pulse-anim'), 500);
+
+                    button.innerHTML = '<i class="fa-solid fa-check"></i> Added!';
+                    setTimeout(() => {
+                        button.innerHTML = '<i class="fa-solid fa-cart-plus"></i> Add to Cart';
+                    }, 2000);
+                }
+            });
+        });
+    });
 });
 
-function toggleDarkMode() {
-    const isDark = document.body.classList.toggle('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    document.getElementById('mode-btn').innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+// Remove Specific Item
+function removeItem(cid) {
+    if(confirm('Remove this item?')) {
+        const formData = new FormData();
+        formData.append('remove_id', cid);
+
+        fetch('cart.php', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.text())
+        .then(data => {
+            if(data.trim() === 'deleted') {
+                location.reload(); 
+            }
+        });
+    }
 }
 
-async function saveProfileData() {
-    const phone = document.getElementById('u-phone').value;
-    const address = document.getElementById('u-address').value;
-    const formData = new FormData();
-    formData.append('update_profile', 'true');
-    formData.append('phone', phone);
-    formData.append('address', address);
+// Clear Entire Cart
+function clearCart() {
+    if(confirm('Are you sure you want to empty your cart?')) {
+        const formData = new FormData();
+        formData.append('clear_cart', '1');
 
-    const res = await fetch('update_profile.php', { method: 'POST', body: formData });
-    const result = await res.text();
-    if(result.trim() === 'success') showToast("✅ Profile updated in SQL");
-}
-
-async function uploadProfilePic() {
-    const file = document.getElementById('p-upload').files[0];
-    const formData = new FormData();
-    formData.append('profile_pic', file);
-    
-    // This requires a PHP handler for the image move
-    const res = await fetch('update_profile.php', { method: 'POST', body: formData });
-    location.reload(); // Refresh to show new photo
-}
-function liveSearch() {
-    // Get the search input value and convert to lowercase
-    let filter = document.getElementById('product-search').value.toLowerCase();
-    
-    // Get all product cards
-    let products = document.querySelectorAll('.product');
-
-    products.forEach(product => {
-        // Find the product name inside the card
-        let name = product.querySelector('h3').innerText.toLowerCase();
-        
-        // If the name includes the searched letters, show it; otherwise, hide it
-        if (name.includes(filter)) {
-            product.style.display = ""; // Show
-        } else {
-            product.style.display = "none"; // Hide
-        }
-    });
+        fetch('cart.php', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.text())
+        .then(data => {
+            if(data.trim() === 'cleared') {
+                location.reload();
+            }
+        });
+    }
 }

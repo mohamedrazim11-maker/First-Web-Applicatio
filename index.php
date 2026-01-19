@@ -2,21 +2,36 @@
 session_start(); 
 include "includes/db.php";
 
-if(!isset($_SESSION['user'])) {
+// Check if entering as a guest via URL
+$is_guest = !isset($_SESSION['user']) && isset($_GET['guest']);
+
+// If not logged in AND not a guest, redirect to login
+if(!isset($_SESSION['user']) && !$is_guest) {
     header("Location: login.php");
     exit();
 }
 
-$uid = $_SESSION['user']; 
+// Get selected category from URL
+$selected_category = isset($_GET['category']) ? mysqli_real_escape_string($conn, $_GET['category']) : '';
 
-$u_query = mysqli_query($conn, "SELECT * FROM users WHERE id = '$uid'");
-$u_data = mysqli_fetch_assoc($u_query);
-$profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['profile_pic'] : "images/default-avatar.png";
-
-$user_name = $u_data['name'];
-$user_email = $u_data['email'];
-$phone = isset($u_data['phone']) ? $u_data['phone'] : '';
-$address = isset($u_data['address']) ? $u_data['address'] : '';
+// Data fetching logic
+if(isset($_SESSION['user'])) {
+    $uid = $_SESSION['user']; 
+    $u_query = mysqli_query($conn, "SELECT * FROM users WHERE id = '$uid'");
+    $u_data = mysqli_fetch_assoc($u_query);
+    $profile_pic = !empty($u_data['profile_pic']) ? "images/profiles/".$u_data['profile_pic'] : "images/default-avatar.png";
+    $user_name = $u_data['name'];
+    $user_email = $u_data['email'];
+    $phone = isset($u_data['phone']) ? $u_data['phone'] : '';
+    $address = isset($u_data['address']) ? $u_data['address'] : '';
+} else {
+    // Default values for Guest users
+    $profile_pic = "images/default-avatar.png";
+    $user_name = "Guest Visitor";
+    $user_email = "Login to save profile";
+    $phone = "N/A";
+    $address = "N/A";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -43,17 +58,8 @@ $address = isset($u_data['address']) ? $u_data['address'] : '';
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.95); opacity: 0.7; } }
         
-        /* Product Description Overlay */
         .product-img-link { position: relative; cursor: pointer; display: block; overflow: hidden; border-radius: 8px; }
-        .product-description-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9); color: white; padding: 15px;
-            font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
-            text-align: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
-        }
-        .product-img-link:hover .product-description-overlay { opacity: 1; }
 
-        /* Styled Add to Cart Button */
         .btn-add {
             width: 100%; background: linear-gradient(135deg, var(--primary), #1d4ed8);
             color: white; border: none; padding: 12px; border-radius: 10px;
@@ -65,6 +71,43 @@ $address = isset($u_data['address']) ? $u_data['address'] : '';
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; text-align: center; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 25px; cursor: pointer; color: #64748b; }
+
+        /* Category Styles */
+        .category-nav { 
+        display: flex; 
+        gap: 12px; 
+        overflow-x: auto; 
+        padding: 15px 5px; 
+        margin-bottom: 25px; 
+        scrollbar-width: none; 
+    }
+    .category-nav::-webkit-scrollbar { display: none; }
+    
+    .cat-pill { 
+        padding: 10px 22px; 
+        background: rgba(255, 255, 255, 0.1); /* Brighter glass effect */
+        border: 1px solid rgba(255, 255, 255, 0.2); 
+        border-radius: 50px; 
+        color: #6366f1; /* Pure white text */
+        text-decoration: none; 
+        white-space: nowrap; 
+        transition: all 0.3s ease; 
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 6px rgba(83, 8, 81, 0.1);
+    }
+    
+    .cat-pill:hover { 
+        background: rgba(255, 255, 255, 0.2); 
+        transform: translateY(-2px);
+    }
+
+    .cat-pill.active { 
+        background: #6366f1; /* Bright Indigo/Blue */
+        border-color: #818cf8;
+        color: white;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
     </style>
 </head>
 <body>
@@ -80,33 +123,69 @@ $address = isset($u_data['address']) ? $u_data['address'] : '';
     </div>
     <nav style="display: flex; align-items: center;">
         <a href="index.php"><i class="fa-solid fa-house"></i> Home</a>
-        <a href="cart.php" class="cart-link">
-            <i class="fa-solid fa-cart-shopping"></i> Cart 
-            <span id="cart-count">0</span>
-        </a>
+        <?php if(!$is_guest): ?>
+            <a href="cart.php" class="cart-link">
+                <i class="fa-solid fa-cart-shopping"></i> Cart 
+            <span id="cart-count">
+    <?php 
+    if(isset($_SESSION['user'])) {
+        $uid = $_SESSION['user'];
+        // We count the number of distinct rows to see how many items are actually there
+        $count_res = mysqli_query($conn, "SELECT COUNT(*) as total FROM cart WHERE user_id = '$uid'");
+        $count_row = mysqli_fetch_assoc($count_res);
+        echo ($count_row['total'] > 0) ? $count_row['total'] : 0;
+    } else {
+        echo 0;
+    }
+    ?>
+</span>
+            </a>
+        <?php endif; ?>
         <button onclick="toggleDarkMode()" id="mode-btn" class="nav-icon-btn"><i class="fa-solid fa-moon"></i></button>
         <div class="settings-menu">
             <button class="settings-btn"><i class="fa-solid fa-gear"></i></button>
-            <div class="settings-content">
-                <div class="profile-header">
-                    <img src="<?php echo $profile_pic; ?>" id="p-preview" alt="Profile" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
-                    <div class="user-info-display" style="margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                        <strong style="display:block; font-size: 1rem; color: var(--primary);"><?php echo htmlspecialchars($user_name); ?></strong>
-                        <span style="font-size: 0.8rem; color: #64748b;"><?php echo htmlspecialchars($user_email); ?></span>
-                    </div>
-                    <input type="file" id="p-upload" style="display:none" onchange="uploadProfilePic()">
-                    <button onclick="document.getElementById('p-upload').click()" class="btn-sm">Change Photo</button>
-                </div>
-                <hr>
-                <label>Contact Number</label>
-                <input type="text" id="u-phone" value="<?php echo htmlspecialchars($phone); ?>">
-                <label>Delivery Address</label>
-                <textarea id="u-address" rows="2"><?php echo htmlspecialchars($address); ?></textarea>
-                <button onclick="saveProfileData()" class="btn-save">Save Profile</button>
-                <hr>
-                <a href="logout.php" class="logout-link"><i class="fa-solid fa-power-off"></i> Logout</a>
+          <div class="settings-content">
+    <div class="profile-header">
+        <div class="profile-avatar-container">
+            <img src="<?php echo $profile_pic; ?>" id="p-preview" alt="Profile">
+            <?php if(!$is_guest): ?>
+            <div class="avatar-overlay">
+                <button onclick="document.getElementById('p-upload').click()" title="Upload Photo"><i class="fa-solid fa-camera"></i></button>
+                <?php if(!empty($u_data['profile_pic'])): ?>
+                    <button onclick="removeProfilePic()" class="btn-remove-photo" title="Remove Photo"><i class="fa-solid fa-trash"></i></button>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
+        <div class="user-info-display">
+            <strong class="user-name-label"><?php echo htmlspecialchars($user_name); ?></strong>
+            <span class="user-email-label"><?php echo htmlspecialchars($user_email); ?></span>
+        </div>
+        <?php if(!$is_guest): ?>
+            <input type="file" id="p-upload" style="display:none" onchange="uploadProfilePic()">
+        <?php endif; ?>
+    </div>
+    
+    <?php if(!$is_guest): ?>
+        <div class="profile-form-body">
+            <div class="input-group">
+                <label><i class="fa-solid fa-phone"></i> Contact Number</label>
+                <input type="text" id="u-phone" value="<?php echo htmlspecialchars($phone); ?>" placeholder="Enter phone...">
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-location-dot"></i> Delivery Address</label>
+                <textarea id="u-address" rows="2" placeholder="Enter address..."><?php echo htmlspecialchars($address); ?></textarea>
+            </div>
+            <button onclick="saveProfileData()" class="btn-save">Update Profile</button>
+        </div>
+        <hr>
+        <a href="logout.php" class="logout-link"><i class="fa-solid fa-power-off"></i> Logout</a>
+    <?php else: ?>
+        <hr>
+        <p class="guest-msg">Login to customize your profile</p>
+        <a href="login.php" class="logout-link login-link"><i class="fa-solid fa-right-to-bracket"></i> Login Now</a>
+    <?php endif; ?>
+</div>
     </nav>
 </header>
 
@@ -118,43 +197,42 @@ $address = isset($u_data['address']) ? $u_data['address'] : '';
         </div>
     </div>
 
-    <div class="products" id="products-grid">
+    <div class="category-nav">
+        <a href="index.php<?php echo $is_guest ? '?guest=1' : ''; ?>" class="cat-pill <?php echo $selected_category == '' ? 'active' : ''; ?>">All Products</a>
         <?php
-        $q = mysqli_query($conn, "SELECT * FROM products");
+        $cat_query = mysqli_query($conn, "SELECT * FROM categories");
+        while($cat = mysqli_fetch_assoc($cat_query)) {
+            $active_class = ($selected_category == $cat['id']) ? 'active' : '';
+            $guest_param = $is_guest ? '&guest=1' : '';
+            echo "<a href='index.php?category={$cat['id']}{$guest_param}' class='cat-pill {$active_class}'>{$cat['category_name']}</a>";
+        }
+        ?>
+    </div>
+
+   <div class="products" id="products-grid">
+        <?php
+        $sql = "SELECT * FROM products" . ($selected_category != '' ? " WHERE category_id = '$selected_category'" : "");
+        $q = mysqli_query($conn, $sql);
         while($p = mysqli_fetch_assoc($q)) {
             $imgPath = (!empty($p['image'])) ? "images/".$p['image'] : "images/no-image.png";
-            $stock = (int)$p['stock'];
-            $description = htmlspecialchars($p['description'] ?? 'Premium quality hardware.');
+            $guest_url = $is_guest ? "&guest=1" : "";
         ?>
-        <div class="product">
-            <div class="product-img-link" onclick="openDetails('<?php echo addslashes($p['name']); ?>', '<?php echo $imgPath; ?>', '<?php echo number_format($p['price']); ?>', '<?php echo $stock; ?>')">
-                <img src="<?php echo $imgPath; ?>" alt="Product">
-                <div class="product-description-overlay"><?php echo $description; ?></div>
+            <div class="product">
+                <a href="view_product.php?id=<?php echo $p['id'] . $guest_url; ?>" class="product-img-link">
+                    <img src="<?php echo $imgPath; ?>" alt="Product">
+                </a>
+                <div class="product-info">
+                    <h3><?php echo $p['name']; ?></h3>
+                    <p class="price">Rs. <?php echo number_format($p['price']); ?></p>
+                </div>
+                <?php if(!$is_guest): ?>
+                    <form method="POST" action="cart.php">
+                        <input type="hidden" name="pid" value="<?php echo $p['id']; ?>">
+                        <button type="submit" name="add" class="btn-add"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
+                    </form>
+                <?php endif; ?>
             </div>
-            <div class="product-info">
-                <h3><?php echo $p['name']; ?></h3>
-                <p class="price">Rs. <?php echo number_format($p['price']); ?></p>
-                <p class="stock">Available: <span id="stock-<?php echo $p['id']; ?>"><?php echo $stock; ?></span></p>
-            </div>
-            <form class="cart-form" method="POST" action="cart.php">
-                <input type="hidden" name="pid" value="<?php echo $p['id']; ?>">
-                <input type="hidden" name="add" value="1">
-                <button type="submit" class="btn-add" <?php echo ($stock <= 0) ? 'disabled' : ''; ?>>
-                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
-                </button>
-            </form>
-        </div>
         <?php } ?>
-    </div>
-</div>
-
-<div id="detailsModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeDetails()">&times;</span>
-        <img id="m-img" src="" style="max-height: 200px; margin-bottom: 15px;">
-        <h2 id="m-name"></h2>
-        <h3 id="m-price" style="color:var(--primary);"></h3>
-        <p id="m-stock"></p>
     </div>
 </div>
 
@@ -162,8 +240,19 @@ $address = isset($u_data['address']) ? $u_data['address'] : '';
     window.addEventListener('load', () => {
         setTimeout(() => {
             const loader = document.getElementById('preloader');
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
+            if(loader){ loader.style.opacity = '0'; setTimeout(() => { loader.style.display = 'none'; }, 500); }
+        }, 1000); 
+    });
+</script>
+</script>
+<script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById('preloader');
+            if(loader){
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
         }, 2000); 
     });
     function openDetails(name, img, price, stock) {

@@ -19,7 +19,7 @@ if (isset($_POST['login'])) {
     if ($user && password_verify($pass, $user['password'])) {
         $_SESSION['user'] = $user['id'];
         $_SESSION['user_name'] = $user['name'];
-        header("Location: index.php"); // The "Jump" to home
+        header("Location: index.php"); 
         exit();
     } else {
         $error = "Invalid Gmail or Password";
@@ -67,6 +67,10 @@ if (isset($_POST['login'])) {
     </form>
     <div style="margin-top:20px; font-size:0.9rem; color:#64748b;">
         Don't have an account? <a href="register.php" style="color:#2563eb; text-decoration:none; font-weight:700;">Register Now</a>
+        <br><br>
+        <a href="index.php?guest=true" style="color:#64748b; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-eye"></i> Explore as Guest
+        </a>
     </div>
 </div>
 </body>
